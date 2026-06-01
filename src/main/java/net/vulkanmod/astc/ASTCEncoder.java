@@ -1,6 +1,6 @@
 package net.vulkanmod.astc;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +64,7 @@ public class ASTCEncoder {
                 binary, "-cl",
                 tmpIn.toString(), tmpOut.toString(),
                 blockX + "x" + blockY,
-                "-fast"          // runtime: fast quality
+                "-fast"
             );
             pb.redirectErrorStream(true);
             Process proc = pb.start();
@@ -84,7 +84,7 @@ public class ASTCEncoder {
      * Async encode + store in cache. Returns null on failure (non-fatal).
      */
     public static CompletableFuture<byte[]> encodeAsync(
-            ResourceLocation location, byte[] pngBytes,
+            Identifier location, byte[] pngBytes,
             int blockX, int blockY, int vkFormat) {
         return CompletableFuture.supplyAsync(() -> {
             try {
