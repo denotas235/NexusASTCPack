@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "net.vulkanmod.astc.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "TextureAtlasMixin",
+    "SpriteLoaderMixin",
+    "TextureManagerMixin",
+    "SimpleTextureUploadMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}
