@@ -24,49 +24,57 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # ── Download astcenc (x86_64 AVX2 for CI — ARM64 is for the device) ───
-      - name: Download astcenc 4.8.0 (Linux x86_64)
+      # ── astcenc 5.4.0 (Linux x64 AVX2) — non-fatal if download fails ──────
+      - name: Download astcenc 5.4.0 (Linux x64)
+        continue-on-error: true
         run: |
           curl -fsSL \
-            "https://github.com/ARM-software/astc-encoder/releases/download/4.8.0/astcenc-4.8.0-linux-x86_64.zip" \
+            "https://github.com/ARM-software/astc-encoder/releases/download/5.4.0/astcenc-5.4.0-linux-x64.zip" \
             -o astcenc.zip
           unzip -q astcenc.zip -d astcenc_tools
-          # The zip may put the binary in different sub-paths depending on release
-          ASTCENC_BIN=$(find astcenc_tools -name "astcenc-avx2" -o -name "astcenc" 2>/dev/null | head -1)
+          # Binary is at bin/astcenc-avx2 inside the zip
+          ASTCENC_BIN="$(pwd)/astcenc_tools/bin/astcenc-avx2"
           chmod +x "$ASTCENC_BIN"
           echo "ASTCENC_PATH=$ASTCENC_BIN" >> $GITHUB_ENV
-          echo "astcenc found: $ASTCENC_BIN"
-          "$ASTCENC_BIN" --version || true
+          echo "astcenc version: $("$ASTCENC_BIN" --version 2>&1 | head -1)"
+
+      # Ensure ASTCENC_PATH is set (may be empty if download failed)
+      - name: Check astcenc availability
+        run: |
+          if [[ -n "${ASTCENC_PATH:-}" && -x "$ASTCENC_PATH" ]]; then
+            echo "astcenc available: $ASTCENC_PATH"
+          else
+            echo "astcenc not available — build will proceed without bundled ASTC textures"
+            echo "ASTCENC_PATH=" >> $GITHUB_ENV
+          fi
 
       # ── Trigger Loom to download MC JARs ──────────────────────────────────
       - name: Download Minecraft assets (via Loom)
         run: ./gradlew downloadAssets --no-daemon
-        env:
-          ASTCENC_PATH: ""   # skip conversion here; MC JAR not needed yet
 
       # ── Find the MC client JAR in Gradle cache ─────────────────────────────
       - name: Locate MC client JAR
         run: |
+          echo "Searching for MC client JAR..."
           MC_JAR=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null \
-            | xargs -I{} sh -c 'jar tf {} 2>/dev/null | grep -q "assets/minecraft/textures/block/stone.png" && echo {}' \
-            | head -1)
+            | while read f; do
+                if jar tf "$f" 2>/dev/null | grep -q "assets/minecraft/textures/block/stone.png"; then
+                  echo "$f"; break
+                fi
+              done)
           if [[ -z "$MC_JAR" ]]; then
-            echo "MC client JAR not found in Gradle cache — trying fallback download"
-            # Fallback: trigger full generate-sources to get client jar
-            ./gradlew generateSources --no-daemon 2>/dev/null || true
-            MC_JAR=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null \
-              | xargs -I{} sh -c 'jar tf {} 2>/dev/null | grep -q "assets/minecraft/textures/block/stone.png" && echo {}' \
-              | head -1)
+            echo "MC client JAR not found — skipping texture conversion"
+          else
+            echo "Found: $MC_JAR"
           fi
-          echo "MC_JAR=$MC_JAR" >> $GITHUB_ENV
-          echo "MC client JAR: $MC_JAR"
+          echo "MC_JAR=${MC_JAR}" >> $GITHUB_ENV
 
-      # ── Convert vanilla textures to ASTC ──────────────────────────────────
-      - name: Convert textures to ASTC
+      # ── Convert vanilla textures to ASTC (skipped if no astcenc or no JAR) ─
+      - name: Convert vanilla textures to ASTC
         run: |
           chmod +x precompile/convert_textures.sh
-          if [[ -z "$MC_JAR" || ! -f "$MC_JAR" ]]; then
-            echo "Skipping texture conversion — MC JAR not found"
+          if [[ -z "${ASTCENC_PATH:-}" || -z "${MC_JAR:-}" || ! -f "${MC_JAR:-}" ]]; then
+            echo "Skipping texture conversion (astcenc=${ASTCENC_PATH:-none} mc_jar=${MC_JAR:-none})"
             mkdir -p src/main/resources/assets/nexusastcpack
             echo '{"version":1,"entries":[]}' > src/main/resources/assets/nexusastcpack/astc_index.json
           else
@@ -81,19 +89,17 @@ jobs:
       - name: Build mod JAR
         run: ./gradlew build --no-daemon
         env:
-          ASTCENC_PATH: ""   # already converted above; skip duplicate conversion
+          ASTCENC_PATH: ""   # already converted above; skip duplicate in Gradle task
 
       # ── Verify the output ─────────────────────────────────────────────────
       - name: Verify JAR contents
         run: |
           JAR=$(find build/libs -name "NexusASTCPack-*.jar" ! -name "*-sources.jar" | head -1)
-          echo "JAR: $JAR"
-          echo "--- fabric.mod.json ---"
-          jar xf "$JAR" fabric.mod.json -C /tmp && cat /tmp/fabric.mod.json 2>/dev/null || \
-            unzip -p "$JAR" fabric.mod.json
-          echo ""
+          echo "Built JAR: $JAR ($(du -sh "$JAR" | cut -f1))"
           ASTC_COUNT=$(jar tf "$JAR" | grep -c '\.astc$' || echo 0)
           echo "Bundled ASTC textures: $ASTC_COUNT"
+          echo "--- fabric.mod.json ---"
+          jar xf "$JAR" fabric.mod.json && cat fabric.mod.json
 
       # ── Upload artifact ────────────────────────────────────────────────────
       - name: Upload NexusASTCPack JAR
