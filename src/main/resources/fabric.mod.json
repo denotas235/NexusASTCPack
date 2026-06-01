@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "nexusastcpack",
+  "version": "${version}",
+  "name": "NexusASTCPack",
+  "description": "ASTC texture compression for VulkanMod on Mali-G52 MC2 — arm64 (MC 1.21.11)",
+  "authors": ["denotas235"],
+  "contact": {
+    "sources": "https://github.com/denotas235/NexusASTCPack"
+  },
+  "license": "LGPL-3.0-only",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["net.vulkanmod.astc.NexusASTCPack"]
+  },
+  "mixins": ["nexusastc.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.2",
+    "minecraft": "1.21.11",
+    "java": ">=21"
+  },
+  "suggests": {
+    "vulkanmod": "*"
+  }
+}
