@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 import java.io.InputStream;
@@ -22,18 +22,18 @@ import java.nio.charset.StandardCharsets;
  *   5. Warm-starts disk cache lookups for any third-party mod textures.
  *
  * Resource layout inside the JAR:
- *   assets/nexusastcpack/astc_index.json         ← index of all bundled textures
- *   assets/minecraft/textures/block/stone.astc   ← pre-converted vanilla textures
+ *   assets/nexusastcpack/astc_index.json         <- index of all bundled textures
+ *   assets/minecraft/textures/block/stone.astc   <- pre-converted vanilla textures
  */
 public class ASTCResourceProvider implements SimpleSynchronousResourceReloadListener {
 
     private static final Gson GSON = new Gson();
-    private static final ResourceLocation ID =
-            ResourceLocation.fromNamespaceAndPath("nexusastcpack", "astc_loader");
+    private static final Identifier ID =
+            Identifier.fromNamespaceAndPath("nexusastcpack", "astc_loader");
     private static final String INDEX_PATH = "/assets/nexusastcpack/astc_index.json";
 
     @Override
-    public ResourceLocation getFabricId() { return ID; }
+    public Identifier getFabricId() { return ID; }
 
     @Override
     public void onResourceManagerReload(ResourceManager manager) {
@@ -90,7 +90,7 @@ public class ASTCResourceProvider implements SimpleSynchronousResourceReloadList
                     if (astcStream == null) { missing++; continue; }
 
                     byte[] data = astcStream.readAllBytes();
-                    ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(parts[0], parts[1]);
+                    Identifier loc = Identifier.fromNamespaceAndPath(parts[0], parts[1]);
                     ASTCTextureRegistry.put(loc, new ASTCTextureRegistry.ASTCEntry(data, vkFmt, bx, by));
                     loaded++;
                 }
