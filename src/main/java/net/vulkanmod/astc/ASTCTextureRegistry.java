@@ -1,6 +1,6 @@
 package net.vulkanmod.astc;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
  * Usage from NEXUSVULKANMOD (optional dependency pattern):
  * <pre>
  *   if (FabricLoader.getInstance().isModLoaded("nexusastcpack")) {
- *       ASTCTextureRegistry.ASTCEntry entry = ASTCTextureRegistry.get(resourceLocation);
+ *       ASTCTextureRegistry.ASTCEntry entry = ASTCTextureRegistry.get(resourceId);
  *       if (entry != null) {
  *           // upload entry.data() as VkFormat entry.vkFormat() via Vulkan
  *           return;
@@ -60,13 +60,13 @@ public class ASTCTextureRegistry {
      * — ASTC hardware is not supported, OR
      * — no entry has been registered for this location.
      */
-    public static @Nullable ASTCEntry get(ResourceLocation location) {
+    public static @Nullable ASTCEntry get(Identifier location) {
         if (!ASTCCapabilities.isLdrSupported()) return null;
         return REGISTRY.get(location.toString());
     }
 
     /** Returns true if ASTC is supported and an entry exists for this location. */
-    public static boolean has(ResourceLocation location) {
+    public static boolean has(Identifier location) {
         return ASTCCapabilities.isLdrSupported() && REGISTRY.containsKey(location.toString());
     }
 
@@ -75,11 +75,11 @@ public class ASTCTextureRegistry {
 
     // ── Mutation API (called from ASTCResourceProvider / ASTCEncoder) ──────
 
-    public static void put(ResourceLocation location, ASTCEntry entry) {
+    public static void put(Identifier location, ASTCEntry entry) {
         REGISTRY.put(location.toString(), entry);
     }
 
-    public static void remove(ResourceLocation location) {
+    public static void remove(Identifier location) {
         REGISTRY.remove(location.toString());
     }
 
