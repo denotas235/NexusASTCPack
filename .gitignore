@@ -1,0 +1,11 @@
+.gradle/
+build/
+run/
+out/
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+src/main/resources/assets/minecraft/textures/**/*.astc
+!src/main/resources/assets/nexusastcpack/
