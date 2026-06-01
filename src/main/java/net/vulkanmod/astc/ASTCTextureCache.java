@@ -1,7 +1,7 @@
 package net.vulkanmod.astc;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class ASTCTextureCache {
         }
     }
 
-    private static String key(ResourceLocation loc, int blockX, int blockY) {
+    private static String key(Identifier loc, int blockX, int blockY) {
         return loc.getNamespace() + "_"
              + loc.getPath().replace('/', '_')
              + "_" + blockX + "x" + blockY + ".astc";
@@ -49,7 +49,7 @@ public class ASTCTextureCache {
     /**
      * Returns cached ASTC bytes or null if not in cache.
      */
-    public static byte[] lookup(ResourceLocation loc, int blockX, int blockY) {
+    public static byte[] lookup(Identifier loc, int blockX, int blockY) {
         String k = key(loc, blockX, blockY);
         byte[] mem = MEMORY.get(k);
         if (mem != null) return mem;
@@ -68,7 +68,7 @@ public class ASTCTextureCache {
     /**
      * Stores ASTC bytes in memory cache and disk.
      */
-    public static void store(ResourceLocation loc, int blockX, int blockY, byte[] data) {
+    public static void store(Identifier loc, int blockX, int blockY, byte[] data) {
         String k = key(loc, blockX, blockY);
         MEMORY.put(k, data);
         if (cacheDir == null) return;
@@ -99,8 +99,8 @@ public class ASTCTextureCache {
             }
             if (deleted > 0) LOGGER.info("[NexusASTCPack] Pruned {} stale cache files", deleted);
             if (total > MAX_SIZE_BYTES)
-                LOGGER.warn("[NexusASTCPack] Cache is {:.1f} MB — consider clearing astc-cache/",
-                        total / 1_048_576.0);
+                LOGGER.warn("[NexusASTCPack] Cache is {} MB — consider clearing astc-cache/",
+                        total / 1_048_576);
         } catch (IOException e) {
             LOGGER.debug("[NexusASTCPack] Prune error: {}", e.getMessage());
         }
